@@ -1,7 +1,7 @@
 package com.timatix.servicebooking.controller;
 
-import com.timatix.bookingservices.model.ServiceQuote;
-import com.timatix.bookingservices.repository.ServiceQuoteRepository;
+import com.timatix.servicebooking.model.ServiceQuote;
+import com.timatix.servicebooking.repository.ServiceQuoteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
