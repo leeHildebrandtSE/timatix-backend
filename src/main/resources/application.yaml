@@ -1,4 +1,4 @@
-# Main Application Configuration
+# Updated Main Application Configuration
 spring:
   application:
     name: timatix-booking-services
@@ -52,6 +52,27 @@ spring:
     type: simple
     cache-names: users,vehicles,services,bookings
 
+  # Email Configuration (for notifications)
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    from: ${MAIL_FROM:noreply@timatix.com}
+
+  # Redis Configuration (for caching and sessions)
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000ms
+
 # Server Configuration
 server:
   port: 8081
@@ -62,12 +83,18 @@ server:
     include-binding-errors: always
     include-stacktrace: on_param
 
+# Security Configuration
+security:
+  jwt:
+    secret: ${JWT_SECRET:timatixSecretKeyForDevelopmentOnlyNotForProduction}
+    expiration: ${JWT_EXPIRATION:86400000}  # 24 hours in milliseconds
+
 # Actuator Configuration
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,env,beans
+        include: health,info,metrics,env,beans,prometheus
   endpoint:
     health:
       show-details: when-authorized
@@ -80,6 +107,12 @@ management:
       enabled: true
     diskspace:
       enabled: true
+    redis:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
 
 # Logging Configuration
 logging:
@@ -89,30 +122,88 @@ logging:
   level:
     com.timatix.servicebooking: INFO
     org.springframework.web: INFO
+    org.springframework.security: INFO
 
 # File Storage Configuration
 file:
   upload:
-    dir: ./uploads
-    max-size: 10MB
+    dir: ${FILE_UPLOAD_DIR:./uploads}
+    max-size: ${FILE_MAX_SIZE:10485760}  # 10MB
+    allowed-types: image/jpeg,image/png,image/gif,application/pdf,video/mp4
 
 # Business Configuration
 business:
-  name: Timatix Auto Works
-  address: 123 Workshop Street, Cape Town, South Africa
-  phone: +27-21-123-4567
-  email: info@timatix.com
-  website: https://timatix.com
+  name: ${BUSINESS_NAME:Timatix Auto Works}
+  address: ${BUSINESS_ADDRESS:123 Workshop Street, Cape Town, South Africa}
+  phone: ${BUSINESS_PHONE:+27-21-123-4567}
+  email: ${BUSINESS_EMAIL:info@timatix.com}
+  website: ${BUSINESS_WEBSITE:https://timatix.com}
+  vat-number: ${BUSINESS_VAT:4123456789}
+  registration-number: ${BUSINESS_REG:2023/123456/07}
 
 # Booking Configuration
 booking:
   slots:
     default-duration: 60
     max-advance-days: 30
+    working-hours:
+      start: "08:00"
+      end: "17:00"
+    working-days: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY]
   quotes:
     default-validity-days: 7
+    auto-expire-enabled: true
+
+# Invoice Configuration
+invoice:
+  tax-rate: 0.15  # 15% VAT
+  payment-terms: 30  # days
+  currency: ZAR
+  prefix: TIM
+
+# Notification Configuration
+notification:
+  email:
+    enabled: ${EMAIL_NOTIFICATIONS_ENABLED:true}
+    from-name: ${EMAIL_FROM_NAME:Timatix Auto Works}
+  sms:
+    enabled: ${SMS_NOTIFICATIONS_ENABLED:false}
+    provider: ${SMS_PROVIDER:}
+    api-key: ${SMS_API_KEY:}
+  websocket:
+    enabled: true
+
+# API Documentation
+springdoc:
+  api-docs:
+    path: /docs
+  swagger-ui:
+    path: /docs/ui
+    operations-sorter: method
+    tags-sorter: alpha
+  info:
+    title: ${APP_TITLE:Timatix Booking Services API}
+    description: ${APP_DESCRIPTION:Vehicle service management and booking system}
+    version: ${APP_VERSION:1.0.0}
 
 # Application Configuration
 app:
   timezone: Africa/Johannesburg
   locale: en_ZA
+  title: Timatix Booking Services API
+  description: Vehicle service management and booking system
+  version: 1.0.0
+
+# Rate Limiting Configuration
+rate-limit:
+  enabled: ${RATE_LIMIT_ENABLED:true}
+  requests-per-minute: ${RATE_LIMIT_RPM:100}
+  requests-per-hour: ${RATE_LIMIT_RPH:1000}
+
+# CORS Configuration
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080}
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: Authorization,Content-Type,X-Requested-With
+  allow-credentials: true
+  max-age: 3600

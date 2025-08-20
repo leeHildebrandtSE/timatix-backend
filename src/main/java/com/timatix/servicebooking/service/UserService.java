@@ -2,7 +2,6 @@ package com.timatix.servicebooking.service;
 
 import com.timatix.servicebooking.model.User;
 import com.timatix.servicebooking.repository.UserRepository;
-import com.timatix.servicebooking.dto.UserRegistrationDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

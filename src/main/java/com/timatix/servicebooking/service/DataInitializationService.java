@@ -1,10 +1,19 @@
 package com.timatix.servicebooking.service;
 
-import com.timatix.servicebooking.model.*;
-import com.timatix.servicebooking.repository.*;
+import com.timatix.servicebooking.model.ServiceCatalog;
+import com.timatix.servicebooking.model.ServiceQuote;
+import com.timatix.servicebooking.model.ServiceRequest;
+import com.timatix.servicebooking.model.User;
+import com.timatix.servicebooking.model.Vehicle;
+import com.timatix.servicebooking.repository.ServiceCatalogRepository;
+import com.timatix.servicebooking.repository.ServiceQuoteRepository;
+import com.timatix.servicebooking.repository.ServiceRequestRepository;
+import com.timatix.servicebooking.repository.UserRepository;
+import com.timatix.servicebooking.repository.VehicleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,17 +29,22 @@ public class DataInitializationService implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final ServiceCatalogRepository serviceCatalogRepository;
+    private final VehicleRepository vehicleRepository;
     private final BookingSlotService bookingSlotService;
+    private final ServiceRequestRepository serviceRequestRepository;
+    private final ServiceQuoteRepository serviceQuoteRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
-        log.info("Starting data initialization...");
+        log.info("Starting enhanced data initialization...");
 
         initializeDefaultUsers();
         initializeServiceCatalog();
         initializeBookingSlots();
+        initializeSampleData();
 
-        log.info("Data initialization completed successfully!");
+        log.info("Enhanced data initialization completed successfully!");
     }
 
     private void initializeDefaultUsers() {
@@ -39,7 +53,7 @@ public class DataInitializationService implements CommandLineRunner {
             User admin = new User();
             admin.setName("System Administrator");
             admin.setEmail("admin@timatix.com");
-            admin.setPassword("admin123"); // In production, this should be hashed
+            admin.setPassword(passwordEncoder.encode("admin123"));
             admin.setPhone("+27123456789");
             admin.setAddress("Timatix Headquarters, Cape Town");
             admin.setRole(User.Role.ADMIN);
@@ -48,44 +62,62 @@ public class DataInitializationService implements CommandLineRunner {
             log.info("Created default admin user: admin@timatix.com");
         }
 
-        // Check if default mechanic exists
-        if (userRepository.findByEmail("mechanic@timatix.com").isEmpty()) {
+        // Create multiple mechanics
+        createMechanicIfNotExists("Mike Smith", "mike@timatix.com", "+27123456790");
+        createMechanicIfNotExists("Sarah Johnson", "sarah@timatix.com", "+27123456791");
+        createMechanicIfNotExists("David Wilson", "david.mechanic@timatix.com", "+27123456792");
+
+        // Create sample clients
+        createClientIfNotExists("John Doe", "john.doe@email.com", "+27123456793");
+        createClientIfNotExists("Emma Brown", "emma.brown@email.com", "+27123456794");
+        createClientIfNotExists("Alex Taylor", "alex.taylor@email.com", "+27123456795");
+    }
+
+    private void createMechanicIfNotExists(String name, String email, String phone) {
+        if (userRepository.findByEmail(email).isEmpty()) {
             User mechanic = new User();
-            mechanic.setName("Default Mechanic");
-            mechanic.setEmail("mechanic@timatix.com");
-            mechanic.setPassword("mechanic123");
-            mechanic.setPhone("+27123456790");
-            mechanic.setAddress("Workshop Bay 1, Cape Town");
+            mechanic.setName(name);
+            mechanic.setEmail(email);
+            mechanic.setPassword(passwordEncoder.encode("mechanic123"));
+            mechanic.setPhone(phone);
+            mechanic.setAddress("Workshop Bay, Cape Town");
             mechanic.setRole(User.Role.MECHANIC);
 
             userRepository.save(mechanic);
-            log.info("Created default mechanic user: mechanic@timatix.com");
+            log.info("Created mechanic user: {}", email);
+        }
+    }
+
+    private void createClientIfNotExists(String name, String email, String phone) {
+        if (userRepository.findByEmail(email).isEmpty()) {
+            User client = new User();
+            client.setName(name);
+            client.setEmail(email);
+            client.setPassword(passwordEncoder.encode("client123"));
+            client.setPhone(phone);
+            client.setAddress("Client Address, Cape Town");
+            client.setRole(User.Role.CLIENT);
+
+            userRepository.save(client);
+            log.info("Created client user: {}", email);
         }
     }
 
     private void initializeServiceCatalog() {
         if (serviceCatalogRepository.count() == 0) {
             List<ServiceCatalog> defaultServices = Arrays.asList(
-                    createService("Oil Change", "Standard oil and filter change service",
-                            new BigDecimal("450.00"), 30),
-                    createService("Brake Service", "Complete brake inspection and service",
-                            new BigDecimal("1200.00"), 60),
-                    createService("Tire Rotation", "Rotate tires for even wear",
-                            new BigDecimal("250.00"), 20),
-                    createService("Engine Diagnostic", "Computer diagnostic scan of engine systems",
-                            new BigDecimal("350.00"), 45),
-                    createService("Battery Test", "Battery load test and replacement if needed",
-                            new BigDecimal("180.00"), 15),
-                    createService("Transmission Service", "Transmission fluid change and inspection",
-                            new BigDecimal("800.00"), 90),
-                    createService("Air Filter Replacement", "Replace engine air filter",
-                            new BigDecimal("120.00"), 10),
-                    createService("Wheel Alignment", "4-wheel alignment service",
-                            new BigDecimal("650.00"), 45),
-                    createService("Coolant Flush", "Complete cooling system flush and refill",
-                            new BigDecimal("400.00"), 40),
-                    createService("Spark Plug Replacement", "Replace spark plugs and ignition components",
-                            new BigDecimal("320.00"), 30)
+                    createService("Oil Change", "Standard oil and filter change service", new BigDecimal("450.00"), 30),
+                    createService("Brake Service", "Complete brake inspection and service", new BigDecimal("1200.00"), 60),
+                    createService("Tire Rotation", "Rotate tires for even wear", new BigDecimal("250.00"), 20),
+                    createService("Engine Diagnostic", "Computer diagnostic scan of engine systems", new BigDecimal("350.00"), 45),
+                    createService("Battery Test", "Battery load test and replacement if needed", new BigDecimal("180.00"), 15),
+                    createService("Transmission Service", "Transmission fluid change and inspection", new BigDecimal("800.00"), 90),
+                    createService("Air Filter Replacement", "Replace engine air filter", new BigDecimal("120.00"), 10),
+                    createService("Wheel Alignment", "4-wheel alignment service", new BigDecimal("650.00"), 45),
+                    createService("Coolant Flush", "Complete cooling system flush and refill", new BigDecimal("400.00"), 40),
+                    createService("Spark Plug Replacement", "Replace spark plugs and ignition components", new BigDecimal("320.00"), 30),
+                    createService("Full Service", "Comprehensive vehicle service and inspection", new BigDecimal("850.00"), 120),
+                    createService("Clutch Repair", "Clutch inspection and replacement", new BigDecimal("2500.00"), 180)
             );
 
             serviceCatalogRepository.saveAll(defaultServices);
@@ -104,9 +136,9 @@ public class DataInitializationService implements CommandLineRunner {
     }
 
     private void initializeBookingSlots() {
-        // Generate booking slots for the next 30 days (weekdays only)
+        // Generate booking slots for the next 60 days (weekdays only)
         LocalDate startDate = LocalDate.now();
-        LocalDate endDate = startDate.plusDays(30);
+        LocalDate endDate = startDate.plusDays(60);
 
         List<LocalTime> timeSlots = Arrays.asList(
                 LocalTime.of(8, 0),   // 08:00
@@ -120,10 +152,101 @@ public class DataInitializationService implements CommandLineRunner {
         );
 
         try {
-            bookingSlotService.generateWeekdaySlotsForDateRange(startDate, endDate, timeSlots, 2);
+            bookingSlotService.generateWeekdaySlotsForDateRange(startDate, endDate, timeSlots, 3);
             log.info("Generated booking slots from {} to {}", startDate, endDate);
         } catch (Exception e) {
             log.warn("Booking slots may already exist: {}", e.getMessage());
         }
+    }
+
+    private void initializeSampleData() {
+        // Create sample vehicles for clients
+        List<User> clients = userRepository.findAllClients();
+        if (!clients.isEmpty() && vehicleRepository.count() == 0) {
+            for (User client : clients) {
+                createSampleVehiclesForClient(client);
+            }
+        }
+
+        // Create sample service requests
+        if (serviceRequestRepository.count() == 0) {
+            createSampleServiceRequests();
+        }
+    }
+
+    private void createSampleVehiclesForClient(User client) {
+        List<Vehicle> vehicles = Arrays.asList(
+                createVehicle("Toyota", "Camry", "2020", "CA123GP", "1HGBH41JXMN109186", "Silver", client),
+                createVehicle("Honda", "Civic", "2019", "CA456GP", "2HGBH41JXMN109187", "Blue", client)
+        );
+
+        vehicleRepository.saveAll(vehicles);
+        log.info("Created {} vehicles for client: {}", vehicles.size(), client.getEmail());
+    }
+
+    private Vehicle createVehicle(String make, String model, String year, String licensePlate,
+                                  String vin, String color, User owner) {
+        Vehicle vehicle = new Vehicle();
+        vehicle.setMake(make);
+        vehicle.setModel(model);
+        vehicle.setYear(year);
+        vehicle.setLicensePlate(licensePlate);
+        vehicle.setVin(vin);
+        vehicle.setColor(color);
+        vehicle.setOwner(owner);
+        return vehicle;
+    }
+
+    private void createSampleServiceRequests() {
+        List<User> clients = userRepository.findAllClients();
+        List<User> mechanics = userRepository.findAllMechanics();
+        List<ServiceCatalog> services = serviceCatalogRepository.findByIsActiveTrue();
+
+        if (!clients.isEmpty() && !services.isEmpty()) {
+            User client = clients.get(0);
+            List<Vehicle> vehicles = vehicleRepository.findByOwner(client);
+
+            if (!vehicles.isEmpty()) {
+                ServiceRequest request = new ServiceRequest();
+                request.setClient(client);
+                request.setVehicle(vehicles.get(0));
+                request.setService(services.get(0)); // Oil Change
+                request.setPreferredDate(LocalDate.now().plusDays(3));
+                request.setPreferredTime(LocalTime.of(9, 0));
+                request.setNotes("Car is making unusual noises during startup");
+                request.setStatus(ServiceRequest.RequestStatus.PENDING_QUOTE);
+
+                if (!mechanics.isEmpty()) {
+                    request.setAssignedMechanic(mechanics.get(0));
+                }
+
+                serviceRequestRepository.save(request);
+                log.info("Created sample service request");
+
+                // Create a sample quote
+                if (!mechanics.isEmpty()) {
+                    createSampleQuote(request, mechanics.get(0));
+                }
+            }
+        }
+    }
+
+    private void createSampleQuote(ServiceRequest request, User mechanic) {
+        ServiceQuote quote = new ServiceQuote();
+        quote.setRequest(request);
+        quote.setMechanic(mechanic);
+        quote.setLabourCost(new BigDecimal("300.00"));
+        quote.setPartsCost(new BigDecimal("150.00"));
+        quote.setTotalAmount(new BigDecimal("450.00"));
+        quote.setNotes("Standard oil change with premium oil filter");
+        quote.setApprovalStatus(ServiceQuote.ApprovalStatus.PENDING);
+
+        serviceQuoteRepository.save(quote);
+
+        // Update request status
+        request.setStatus(ServiceRequest.RequestStatus.QUOTE_SENT);
+        serviceRequestRepository.save(request);
+
+        log.info("Created sample quote for service request");
     }
 }
