@@ -1,0 +1,68 @@
+# Development Environment Configuration
+spring:
+  # Database Configuration for Development
+  datasource:
+    url: jdbc:postgresql://localhost:5432/timatix_booking
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA Configuration for Development
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Development specific Jackson settings
+  jackson:
+    serialization:
+      indent-output: true
+
+  # H2 Console (if needed for testing)
+  h2:
+    console:
+      enabled: false
+
+# Development Logging
+logging:
+  level:
+    com.timatix.servicebooking: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    root: INFO
+
+# Development Server Configuration
+server:
+  error:
+    include-stacktrace: always
+
+# Development Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env,beans,configprops,mappings
+
+# Development File Storage
+file:
+  upload:
+    dir: ./dev-uploads
+
+# Development Database Settings
+debug: true
+
+# Development CORS (allow all origins)
+cors:
+  allowed-origins: "*"
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true

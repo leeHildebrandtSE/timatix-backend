@@ -1,0 +1,12 @@
+# .dockerignore
+target/
+.mvn/wrapper/maven-wrapper.jar
+.git/
+.gitignore
+README.md
+Dockerfile
+docker-compose.yml
+*.log
+.DS_Store
+.vscode/
+.idea/

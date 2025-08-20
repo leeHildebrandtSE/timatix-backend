@@ -1,0 +1,72 @@
+# Test Environment Configuration
+spring:
+  # In-Memory Database for Testing
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  # JPA Configuration for Testing
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # H2 Console for Testing
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # SQL Initialization for Tests
+  sql:
+    init:
+      mode: embedded
+      schema-locations: classpath:test-schema.sql
+      data-locations: classpath:test-data.sql
+
+  # Test Jackson Configuration
+  jackson:
+    serialization:
+      indent-output: false
+
+# Test Logging Configuration
+logging:
+  level:
+    com.timatix.servicebooking: DEBUG
+    org.springframework.test: INFO
+    org.hibernate.SQL: INFO
+    org.springframework.web: INFO
+    org.testcontainers: INFO
+    root: WARN
+
+# Test Server Configuration
+server:
+  port: 0  # Random port for testing
+
+# Test Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# Test File Storage
+file:
+  upload:
+    dir: ./test-uploads
+
+# Test Business Configuration
+business:
+  name: Timatix Test Environment
+  address: Test Address
+  phone: +27-21-TEST
+  email: test@timatix.com
+
+# Disable unnecessary features in tests
+spring.cloud.config.enabled: false

@@ -1,0 +1,78 @@
+# Local Development Environment Configuration
+spring:
+  # Local Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/timatix_booking_local
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+
+  # Local JPA Configuration
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop  # Recreate schema on restart for local dev
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Enable H2 Console for debugging
+  h2:
+    console:
+      enabled: true
+
+  # Local Jackson Configuration
+  jackson:
+    serialization:
+      indent-output: true
+
+  # Local development specific settings
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+# Local Logging Configuration
+logging:
+  level:
+    com.timatix.servicebooking: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: DEBUG
+    root: INFO
+
+# Local Server Configuration
+server:
+  port: 8080  # Different port for local development
+  error:
+    include-stacktrace: always
+
+# Local Actuator Configuration (expose everything for debugging)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+# Local File Storage
+file:
+  upload:
+    dir: ./local-uploads
+
+# Local Business Configuration
+business:
+  name: Timatix Local Development
+  address: Local Development Address
+  phone: +27-21-LOCAL
+  email: local@timatix.com
+
+# Enable debug mode
+debug: true

@@ -1,0 +1,156 @@
+# Production Environment Configuration
+spring:
+  # Production Database Configuration
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/timatix_booking_prod}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+
+  # Production JPA Configuration
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate  # Never auto-update in production
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          batch_size: 25
+        connection:
+          provider_disables_autocommit: true
+        cache:
+          use_second_level_cache: false
+          use_query_cache: false
+
+  # Production Jackson Configuration
+  jackson:
+    serialization:
+      indent-output: false
+
+  # Production Cache Configuration
+  cache:
+    type: redis
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+# Production Logging Configuration
+logging:
+  level:
+    com.timatix.servicebooking: WARN
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+    org.springframework.security: WARN
+    root: INFO
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n"
+  file:
+    name: ./logs/timatix-backend.log
+    max-size: 100MB
+    max-history: 30
+
+# Production Server Configuration
+server:
+  port: ${SERVER_PORT:8081}
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+  # SSL Configuration (uncomment when certificates are available)
+  # ssl:
+  #   enabled: true
+  #   key-store: ${SSL_KEYSTORE_PATH:classpath:keystore.p12}
+  #   key-store-password: ${SSL_KEYSTORE_PASSWORD}
+  #   key-store-type: PKCS12
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
+
+# Production Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /management
+  endpoint:
+    health:
+      show-details: never
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Production File Storage
+file:
+  upload:
+    dir: ${FILE_UPLOAD_DIR:/app/uploads}
+
+# Production Security Configuration
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000}  # 24 hours
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://timatix.com,https://app.timatix.com}
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+    allowed-headers: Authorization,Content-Type,X-Requested-With
+    allow-credentials: true
+    max-age: 3600
+
+# Production Business Configuration
+business:
+  name: ${BUSINESS_NAME:Timatix Auto Works}
+  address: ${BUSINESS_ADDRESS:123 Workshop Street, Cape Town, South Africa}
+  phone: ${BUSINESS_PHONE:+27-21-123-4567}
+  email: ${BUSINESS_EMAIL:info@timatix.com}
+  website: ${BUSINESS_WEBSITE:https://timatix.com}
+
+# Production Database Migration
+flyway:
+  enabled: true
+  locations: classpath:db/migration
+  baseline-on-migrate: true
+
+# Production Email Configuration (for notifications)
+# mail:
+#   host: ${MAIL_HOST:smtp.gmail.com}
+#   port: ${MAIL_PORT:587}
+#   username: ${MAIL_USERNAME}
+#   password: ${MAIL_PASSWORD}
+#   properties:
+#     mail:
+#       smtp:
+#         auth: true
+#         starttls:
+#           enable: true
+
+# Production SMS Configuration (for notifications)
+# sms:
+#   provider:
+#     url: ${SMS_PROVIDER_URL}
+#     api-key: ${SMS_API_KEY}
+
+# Production Rate Limiting
+# rate-limit:
+#   enabled: true
+#   requests-per-minute: 60
+#   requests-per-hour: 1000

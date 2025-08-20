@@ -1,0 +1,69 @@
+# Docker Environment Configuration
+spring:
+  # Docker Database Configuration
+  datasource:
+    url: jdbc:postgresql://postgres:5432/timatix_booking
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 3
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      # Wait for dependencies
+      initialization-fail-timeout: 60000
+
+  # Docker JPA Configuration
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: false
+
+  # Docker Cache Configuration
+  cache:
+    type: redis
+  redis:
+    host: redis
+    port: 6379
+    timeout: 2000ms
+
+# Docker Logging Configuration
+logging:
+  level:
+    com.timatix.servicebooking: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Docker Server Configuration
+server:
+  port: 8081
+
+# Docker Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Docker File Storage
+file:
+  upload:
+    dir: /app/uploads
+
+# Docker CORS Configuration
+cors:
+  allowed-origins: "*"
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
