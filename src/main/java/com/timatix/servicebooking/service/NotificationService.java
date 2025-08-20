@@ -1,5 +1,7 @@
 package com.timatix.servicebooking.service;
 
+import com.timatix.servicebooking.model.Invoice;
+import com.timatix.servicebooking.model.Payment;
 import com.timatix.servicebooking.model.ServiceQuote;
 import com.timatix.servicebooking.model.ServiceRequest;
 import com.timatix.servicebooking.model.User;
@@ -78,6 +80,19 @@ public class NotificationService {
         }
     }
 
+    private String getStatusMessage(ServiceRequest.RequestStatus status) {
+        return switch (status) {
+            case PENDING_QUOTE -> "Waiting for quote";
+            case QUOTE_SENT -> "Quote ready for review";
+            case QUOTE_APPROVED -> "Quote approved, booking confirmed";
+            case QUOTE_DECLINED -> "Quote declined";
+            case BOOKING_CONFIRMED -> "Service booking confirmed";
+            case IN_PROGRESS -> "Service in progress";
+            case COMPLETED -> "Service completed";
+            case CANCELLED -> "Service cancelled";
+        };
+    }
+
     public void notifyServiceStatusUpdate(ServiceRequest request, ServiceRequest.RequestStatus newStatus) {
         User client = request.getClient();
         String statusMessage = getStatusMessage(newStatus);
@@ -93,16 +108,53 @@ public class NotificationService {
         log.info("NOTIFICATION - Service Status Update: {}", message);
     }
 
-    private String getStatusMessage(ServiceRequest.RequestStatus status) {
-        return switch (status) {
-            case PENDING_QUOTE -> "Waiting for quote";
-            case QUOTE_SENT -> "Quote ready for review";
-            case QUOTE_APPROVED -> "Quote approved, booking confirmed";
-            case QUOTE_DECLINED -> "Quote declined";
-            case BOOKING_CONFIRMED -> "Service booking confirmed";
-            case IN_PROGRESS -> "Service in progress";
-            case COMPLETED -> "Service completed";
-            case CANCELLED -> "Service cancelled";
-        };
+    public void notifyPaymentReceived(Invoice invoice, Payment payment) {
+        User client = invoice.getServiceRequest().getClient();
+        String message = String.format(
+                "Hello %s, we have received your payment of R%.2f for invoice %s. Thank you!",
+                client.getName(),
+                payment.getAmount(),
+                invoice.getInvoiceNumber()
+        );
+
+        log.info("NOTIFICATION - Payment Received: {}", message);
+    }
+
+    public void notifyInvoiceGenerated(Invoice invoice) {
+        User client = invoice.getServiceRequest().getClient();
+        String message = String.format(
+                "Hello %s, your invoice %s for R%.2f is ready. Please review and make payment.",
+                client.getName(),
+                invoice.getInvoiceNumber(),
+                invoice.getTotalAmount()
+        );
+
+        log.info("NOTIFICATION - Invoice Generated: {}", message);
+    }
+
+    public void notifyServiceCompleted(ServiceRequest request) {
+        User client = request.getClient();
+        String message = String.format(
+                "Hello %s, your %s %s service has been completed and is ready for collection!",
+                client.getName(),
+                request.getVehicle().getMake(),
+                request.getVehicle().getModel()
+        );
+
+        log.info("NOTIFICATION - Service Completed: {}", message);
+    }
+
+    public void notifyAppointmentReminder(ServiceRequest request) {
+        User client = request.getClient();
+        String message = String.format(
+                "Hello %s, this is a reminder that your %s service for %s %s is scheduled for tomorrow at %s.",
+                client.getName(),
+                request.getService().getName(),
+                request.getVehicle().getMake(),
+                request.getVehicle().getModel(),
+                request.getPreferredTime()
+        );
+
+        log.info("NOTIFICATION - Appointment Reminder: {}", message);
     }
 }

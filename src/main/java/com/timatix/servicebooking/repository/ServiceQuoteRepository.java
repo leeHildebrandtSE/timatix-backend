@@ -28,4 +28,7 @@ public interface ServiceQuoteRepository extends JpaRepository<ServiceQuote, Long
 
     @Query("SELECT sq FROM ServiceQuote sq WHERE sq.mechanic.id = :mechanicId AND sq.approvalStatus = :status")
     List<ServiceQuote> findByMechanicIdAndStatus(@Param("mechanicId") Long mechanicId, @Param("status") ServiceQuote.ApprovalStatus status);
+
+    @Query("SELECT sq FROM ServiceQuote sq WHERE sq.approvalStatus = 'PENDING'")
+    List<ServiceQuote> findPendingQuotes();
 }
