@@ -37,7 +37,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = 'COMPLETED' AND p.processedAt BETWEEN :startDate AND :endDate")
     BigDecimal getTotalRevenueByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
-    @Query("SELECT COUNT(p) FROM Payment p WHERE p.status = 'COMPLETED' AND DATE(p.processedAt) = CURRENT_DATE")
+    // FIXED: Using native SQL query to avoid HQL type mismatch issues
+    @Query(value = "SELECT COUNT(*) FROM payments p WHERE p.status = 'COMPLETED' AND DATE(p.processed_at) = CURRENT_DATE", nativeQuery = true)
     Long countTodaysSuccessfulPayments();
 
     @Query("SELECT p FROM Payment p WHERE p.originalPayment.id = :originalPaymentId")

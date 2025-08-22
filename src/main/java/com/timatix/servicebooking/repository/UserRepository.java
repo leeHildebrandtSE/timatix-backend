@@ -2,8 +2,6 @@ package com.timatix.servicebooking.repository;
 
 import com.timatix.servicebooking.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -16,14 +14,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByRole(User.Role role);
 
-    @Query("SELECT u FROM User u WHERE u.role = :role AND u.name ILIKE %:name%")
-    List<User> findByRoleAndNameContainingIgnoreCase(@Param("role") User.Role role, @Param("name") String name);
+    List<User> findByRoleAndNameContainingIgnoreCase(User.Role role, String name);
 
     boolean existsByEmail(String email);
 
-    @Query("SELECT u FROM User u WHERE u.role = 'MECHANIC'")
-    List<User> findAllMechanics();
+    List<User> findAllByRole(User.Role role);
 
-    @Query("SELECT u FROM User u WHERE u.role = 'CLIENT'")
-    List<User> findAllClients();
+    default List<User> findAllMechanics() {
+        return findAllByRole(User.Role.MECHANIC);
+    }
+
+    default List<User> findAllClients() {
+        return findAllByRole(User.Role.CLIENT);
+    }
 }

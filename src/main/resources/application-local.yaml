@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/timatix_booking_local
     username: postgres
-    password: postgres
+    password: servicesync123
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 5
@@ -48,7 +48,7 @@ logging:
 
 # Local Server Configuration
 server:
-  port: 8080  # Different port for local development
+  port: 8081  # Different port for local development
   error:
     include-stacktrace: always
 

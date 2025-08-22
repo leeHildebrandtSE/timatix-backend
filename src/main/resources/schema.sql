@@ -1,19 +1,52 @@
--- Complete database schema for Timatix Booking Services
--- This schema supports the full vehicle service management system
-
 -- ============================================================================
--- CORE TABLES
+-- COMPLETE DATABASE SCHEMA FOR TIMATIX BOOKING SERVICES
+-- Correct execution order: EXTENSIONS → ENUMS → TABLES → FUNCTIONS → TRIGGERS → DATA
+-- Views are moved to separate script to avoid transaction issues
 -- ============================================================================
 
--- Users table (Clients, Mechanics, Admins)
+-- 1. EXTENSIONS (if needed)
+-- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 2. ENUMS AND CUSTOM TYPES (PostgreSQL doesn't support IF NOT EXISTS for types)
+DROP TYPE IF EXISTS user_role CASCADE;
+CREATE TYPE user_role AS ENUM ('ADMIN', 'CUSTOMER', 'TECHNICIAN');
+
+DROP TYPE IF EXISTS service_status CASCADE;
+CREATE TYPE service_status AS ENUM ('PENDING', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
+
+DROP TYPE IF EXISTS payment_status CASCADE;
+CREATE TYPE payment_status AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED');
+
+DROP TYPE IF EXISTS notification_type CASCADE;
+CREATE TYPE notification_type AS ENUM ('EMAIL', 'SMS', 'PUSH');
+
+-- 3. ALL TABLES FIRST (in dependency order)
+-- Users table (referenced by others)
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    phone VARCHAR(50),
+    email VARCHAR(100) UNIQUE NOT NULL,
+    phone VARCHAR(20),
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    role user_role NOT NULL DEFAULT 'CUSTOMER',
+    is_active BOOLEAN DEFAULT true,
+    email_verified BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Customers table
+CREATE TABLE IF NOT EXISTS customers (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    company_name VARCHAR(100),
     address TEXT,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('CLIENT', 'MECHANIC', 'ADMIN')),
+    city VARCHAR(50),
+    postal_code VARCHAR(10),
+    country VARCHAR(50) DEFAULT 'South Africa',
+    preferred_contact_method notification_type DEFAULT 'EMAIL',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -21,115 +54,78 @@ CREATE TABLE IF NOT EXISTS users (
 -- Vehicles table
 CREATE TABLE IF NOT EXISTS vehicles (
     id BIGSERIAL PRIMARY KEY,
-    make VARCHAR(100) NOT NULL,
-    model VARCHAR(100) NOT NULL,
-    year VARCHAR(4) NOT NULL,
-    license_plate VARCHAR(20) UNIQUE,
-    vin VARCHAR(100) UNIQUE,
-    color VARCHAR(50),
-    photo_url TEXT,
-    owner_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    customer_id BIGINT REFERENCES customers(id) ON DELETE CASCADE,
+    make VARCHAR(50) NOT NULL,
+    model VARCHAR(50) NOT NULL,
+    year INTEGER NOT NULL CHECK (year >= 1900 AND year <= EXTRACT(YEAR FROM CURRENT_DATE) + 1),
+    license_plate VARCHAR(20) UNIQUE NOT NULL,
+    vin VARCHAR(17) UNIQUE,
+    color VARCHAR(30),
+    mileage INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Service catalog table
-CREATE TABLE IF NOT EXISTS service_catalog (
+-- Service types table
+CREATE TABLE IF NOT EXISTS service_types (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(100) NOT NULL,
     description TEXT,
-    base_price DECIMAL(10,2),
-    estimated_duration_minutes INTEGER,
+    estimated_duration_minutes INTEGER NOT NULL DEFAULT 60,
+    base_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Booking slots table
 CREATE TABLE IF NOT EXISTS booking_slots (
     id BIGSERIAL PRIMARY KEY,
-    date DATE NOT NULL,
-    time_slot TIME NOT NULL,
+    slot_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
     max_bookings INTEGER NOT NULL DEFAULT 1,
-    current_bookings INTEGER NOT NULL DEFAULT 0,
-    is_available BOOLEAN NOT NULL DEFAULT true,
+    current_bookings INTEGER DEFAULT 0,
+    is_available BOOLEAN DEFAULT true,
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(date, time_slot)
+    UNIQUE(slot_date, start_time),
+    CHECK (start_time < end_time),
+    CHECK (current_bookings >= 0),
+    CHECK (current_bookings <= max_bookings)
 );
 
 -- Service requests table
 CREATE TABLE IF NOT EXISTS service_requests (
     id BIGSERIAL PRIMARY KEY,
-    client_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    vehicle_id BIGINT NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
-    service_id BIGINT NOT NULL REFERENCES service_catalog(id) ON DELETE RESTRICT,
-    assigned_mechanic_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-    preferred_date DATE,
-    preferred_time TIME,
-    notes TEXT,
-    photo_url TEXT,
-    status VARCHAR(30) NOT NULL DEFAULT 'PENDING_QUOTE' CHECK (
-        status IN ('PENDING_QUOTE', 'QUOTE_SENT', 'QUOTE_APPROVED', 'QUOTE_DECLINED',
-                  'BOOKING_CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')
-    ),
+    customer_id BIGINT REFERENCES customers(id) ON DELETE CASCADE,
+    vehicle_id BIGINT REFERENCES vehicles(id) ON DELETE CASCADE,
+    service_type_id BIGINT REFERENCES service_types(id),
+    booking_slot_id BIGINT REFERENCES booking_slots(id),
+    status service_status DEFAULT 'PENDING',
+    description TEXT,
+    special_instructions TEXT,
+    estimated_completion TIMESTAMP,
+    actual_completion TIMESTAMP,
+    technician_notes TEXT,
+    customer_rating INTEGER CHECK (customer_rating >= 1 AND customer_rating <= 5),
+    customer_feedback TEXT,
+    total_cost DECIMAL(10, 2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Service quotes table
-CREATE TABLE IF NOT EXISTS service_quotes (
-    id BIGSERIAL PRIMARY KEY,
-    request_id BIGINT NOT NULL UNIQUE REFERENCES service_requests(id) ON DELETE CASCADE,
-    mechanic_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    line_items_json TEXT,
-    labour_cost DECIMAL(10,2),
-    parts_cost DECIMAL(10,2),
-    total_amount DECIMAL(10,2) NOT NULL,
-    notes TEXT,
-    approval_status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (
-        approval_status IN ('PENDING', 'ACCEPTED', 'DECLINED', 'EXPIRED')
-    ),
-    valid_until TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    approved_at TIMESTAMP
-);
-
--- ============================================================================
--- EXTENDED TABLES (Progress Tracking, Invoicing, Payments)
--- ============================================================================
-
--- Service progress table (Track service status updates)
-CREATE TABLE IF NOT EXISTS service_progress (
-    id BIGSERIAL PRIMARY KEY,
-    service_request_id BIGINT NOT NULL REFERENCES service_requests(id) ON DELETE CASCADE,
-    updated_by_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    phase VARCHAR(30) NOT NULL CHECK (
-        phase IN ('RECEIVED', 'DIAGNOSIS', 'PARTS_ORDERED', 'REPAIR_IN_PROGRESS',
-                 'QUALITY_CHECK', 'CLEANING', 'READY_FOR_COLLECTION')
-    ),
-    comment TEXT,
-    photo_url TEXT,
-    estimated_completion TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Invoices table
 CREATE TABLE IF NOT EXISTS invoices (
     id BIGSERIAL PRIMARY KEY,
-    service_request_id BIGINT NOT NULL UNIQUE REFERENCES service_requests(id) ON DELETE CASCADE,
-    invoice_number VARCHAR(50) UNIQUE NOT NULL,
-    subtotal DECIMAL(12,2) NOT NULL,
-    tax_amount DECIMAL(12,2),
-    discount_amount DECIMAL(12,2),
-    total_amount DECIMAL(12,2) NOT NULL,
-    line_items_json TEXT,
-    payment_status VARCHAR(20) NOT NULL DEFAULT 'UNPAID' CHECK (
-        payment_status IN ('UNPAID', 'PARTIAL', 'PAID', 'OVERDUE', 'CANCELLED')
-    ),
-    due_date TIMESTAMP,
-    paid_date TIMESTAMP,
+    service_request_id BIGINT REFERENCES service_requests(id) ON DELETE CASCADE,
+    invoice_number VARCHAR(50) UNIQUE,
+    subtotal DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    tax_amount DECIMAL(10, 2) DEFAULT 0.00,
+    total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    due_date DATE,
+    payment_terms VARCHAR(50) DEFAULT 'Net 30',
+    notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -137,388 +133,95 @@ CREATE TABLE IF NOT EXISTS invoices (
 -- Payments table
 CREATE TABLE IF NOT EXISTS payments (
     id BIGSERIAL PRIMARY KEY,
-    invoice_id BIGINT NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
-    transaction_id VARCHAR(100) UNIQUE NOT NULL,
-    amount DECIMAL(12,2) NOT NULL,
+    invoice_id BIGINT REFERENCES invoices(id) ON DELETE CASCADE,
+    amount DECIMAL(10, 2) NOT NULL,
     payment_method VARCHAR(50) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (
-        status IN ('PENDING', 'COMPLETED', 'FAILED', 'CANCELLED', 'REFUNDED')
-    ),
-    gateway_reference VARCHAR(100),
-    failure_reason TEXT,
-    refund_reason TEXT,
-    original_payment_id BIGINT REFERENCES payments(id) ON DELETE SET NULL,
-    processed_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- ============================================================================
--- OPTIONAL EXTENDED TABLES (Future Features)
--- ============================================================================
-
--- Inventory table (Parts and supplies tracking)
-CREATE TABLE IF NOT EXISTS inventory (
-    id BIGSERIAL PRIMARY KEY,
-    part_name VARCHAR(255) NOT NULL,
-    part_number VARCHAR(100) UNIQUE,
-    description TEXT,
-    category VARCHAR(100),
-    current_stock INTEGER NOT NULL DEFAULT 0,
-    minimum_stock INTEGER DEFAULT 0,
-    reorder_level INTEGER DEFAULT 0,
-    unit_cost DECIMAL(10,2),
-    supplier VARCHAR(255),
-    last_restocked TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Service history table (Detailed service records)
-CREATE TABLE IF NOT EXISTS service_history (
-    id BIGSERIAL PRIMARY KEY,
-    vehicle_id BIGINT NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
-    service_request_id BIGINT REFERENCES service_requests(id) ON DELETE SET NULL,
-    service_date DATE NOT NULL,
-    service_type VARCHAR(255) NOT NULL,
-    description TEXT,
-    mileage INTEGER,
-    mechanic_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-    cost DECIMAL(10,2),
-    warranty_until DATE,
+    transaction_id VARCHAR(100),
+    status payment_status DEFAULT 'PENDING',
+    payment_date TIMESTAMP,
+    reference_number VARCHAR(100),
     notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Customer communications table (Email/SMS logs)
-CREATE TABLE IF NOT EXISTS communications (
+-- Notifications table
+CREATE TABLE IF NOT EXISTS notifications (
     id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    service_request_id BIGINT REFERENCES service_requests(id) ON DELETE SET NULL,
-    type VARCHAR(20) NOT NULL CHECK (type IN ('EMAIL', 'SMS', 'PUSH', 'CALL')),
-    subject VARCHAR(255),
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    service_request_id BIGINT REFERENCES service_requests(id) ON DELETE CASCADE,
+    type notification_type NOT NULL,
+    title VARCHAR(200) NOT NULL,
     message TEXT NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (
-        status IN ('PENDING', 'SENT', 'DELIVERED', 'FAILED', 'BOUNCED')
-    ),
+    is_read BOOLEAN DEFAULT false,
     sent_at TIMESTAMP,
-    delivered_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    read_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- File attachments table (Photos, documents, etc.)
-CREATE TABLE IF NOT EXISTS attachments (
+-- Activity logs table
+CREATE TABLE IF NOT EXISTS activity_logs (
     id BIGSERIAL PRIMARY KEY,
-    entity_type VARCHAR(50) NOT NULL CHECK (
-        entity_type IN ('SERVICE_REQUEST', 'VEHICLE', 'USER', 'INVOICE', 'PROGRESS')
-    ),
-    entity_id BIGINT NOT NULL,
-    file_name VARCHAR(255) NOT NULL,
-    file_path TEXT NOT NULL,
-    file_size BIGINT,
-    mime_type VARCHAR(100),
+    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    service_request_id BIGINT REFERENCES service_requests(id) ON DELETE CASCADE,
+    action VARCHAR(100) NOT NULL,
     description TEXT,
-    uploaded_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    ip_address INET,
+    user_agent TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================================
--- COMPREHENSIVE INDEXING
--- ============================================================================
+-- 4. FUNCTIONS (after all tables exist)
+CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS 'BEGIN NEW.updated_at = CURRENT_TIMESTAMP; RETURN NEW; END;' LANGUAGE plpgsql;
 
--- Core table indexes
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
-CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+CREATE OR REPLACE FUNCTION generate_invoice_number() RETURNS TRIGGER AS 'BEGIN IF NEW.invoice_number IS NULL THEN NEW.invoice_number := ''TIM-'' || TO_CHAR(CURRENT_DATE, ''YYYYMM'') || ''-'' || LPAD((SELECT COUNT(*) + 1 FROM invoices WHERE invoice_number LIKE ''TIM-'' || TO_CHAR(CURRENT_DATE, ''YYYYMM'') || ''-%'')::text, 4, ''0''); END IF; RETURN NEW; END;' LANGUAGE plpgsql;
 
-CREATE INDEX IF NOT EXISTS idx_vehicles_owner ON vehicles(owner_id);
-CREATE INDEX IF NOT EXISTS idx_vehicles_license_plate ON vehicles(license_plate);
-CREATE INDEX IF NOT EXISTS idx_vehicles_vin ON vehicles(vin);
-CREATE INDEX IF NOT EXISTS idx_vehicles_make_model ON vehicles(make, model);
+CREATE OR REPLACE FUNCTION update_booking_slot_availability() RETURNS TRIGGER AS 'BEGIN NEW.is_available := (NEW.current_bookings < NEW.max_bookings); RETURN NEW; END;' LANGUAGE plpgsql;
 
-CREATE INDEX IF NOT EXISTS idx_service_catalog_active ON service_catalog(is_active);
-CREATE INDEX IF NOT EXISTS idx_service_catalog_name ON service_catalog(name);
-CREATE INDEX IF NOT EXISTS idx_service_catalog_price ON service_catalog(base_price);
+CREATE OR REPLACE FUNCTION validate_status_transition() RETURNS TRIGGER AS 'BEGIN IF OLD IS NULL THEN RETURN NEW; END IF; IF OLD.status = ''COMPLETED'' AND NEW.status NOT IN (''COMPLETED'', ''CANCELLED'') THEN RAISE EXCEPTION ''Cannot change status from COMPLETED to %'', NEW.status; END IF; IF OLD.status = ''CANCELLED'' AND NEW.status != ''CANCELLED'' THEN RAISE EXCEPTION ''Cannot change status from CANCELLED''; END IF; RETURN NEW; END;' LANGUAGE plpgsql;
 
-CREATE INDEX IF NOT EXISTS idx_booking_slots_date ON booking_slots(date);
-CREATE INDEX IF NOT EXISTS idx_booking_slots_available ON booking_slots(is_available);
-CREATE INDEX IF NOT EXISTS idx_booking_slots_date_time ON booking_slots(date, time_slot);
+-- 5. TRIGGERS (after all tables and functions exist)
+-- Updated_at triggers
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE INDEX IF NOT EXISTS idx_service_requests_client ON service_requests(client_id);
-CREATE INDEX IF NOT EXISTS idx_service_requests_mechanic ON service_requests(assigned_mechanic_id);
-CREATE INDEX IF NOT EXISTS idx_service_requests_status ON service_requests(status);
-CREATE INDEX IF NOT EXISTS idx_service_requests_date ON service_requests(preferred_date);
-CREATE INDEX IF NOT EXISTS idx_service_requests_vehicle ON service_requests(vehicle_id);
-CREATE INDEX IF NOT EXISTS idx_service_requests_service ON service_requests(service_id);
+DROP TRIGGER IF EXISTS update_customers_updated_at ON customers;
+CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE INDEX IF NOT EXISTS idx_service_quotes_request ON service_quotes(request_id);
-CREATE INDEX IF NOT EXISTS idx_service_quotes_mechanic ON service_quotes(mechanic_id);
-CREATE INDEX IF NOT EXISTS idx_service_quotes_status ON service_quotes(approval_status);
-CREATE INDEX IF NOT EXISTS idx_service_quotes_valid_until ON service_quotes(valid_until);
+DROP TRIGGER IF EXISTS update_vehicles_updated_at ON vehicles;
+CREATE TRIGGER update_vehicles_updated_at BEFORE UPDATE ON vehicles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Extended table indexes
-CREATE INDEX IF NOT EXISTS idx_service_progress_request ON service_progress(service_request_id);
-CREATE INDEX IF NOT EXISTS idx_service_progress_user ON service_progress(updated_by_user_id);
-CREATE INDEX IF NOT EXISTS idx_service_progress_phase ON service_progress(phase);
-CREATE INDEX IF NOT EXISTS idx_service_progress_created_at ON service_progress(created_at);
+DROP TRIGGER IF EXISTS update_service_requests_updated_at ON service_requests;
+CREATE TRIGGER update_service_requests_updated_at BEFORE UPDATE ON service_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE INDEX IF NOT EXISTS idx_invoices_request ON invoices(service_request_id);
-CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(payment_status);
-CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices(due_date);
-CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(invoice_number);
-CREATE INDEX IF NOT EXISTS idx_invoices_created_at ON invoices(created_at);
+DROP TRIGGER IF EXISTS update_invoices_updated_at ON invoices;
+CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id);
-CREATE INDEX IF NOT EXISTS idx_payments_transaction ON payments(transaction_id);
-CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
-CREATE INDEX IF NOT EXISTS idx_payments_gateway_ref ON payments(gateway_reference);
-CREATE INDEX IF NOT EXISTS idx_payments_method ON payments(payment_method);
-CREATE INDEX IF NOT EXISTS idx_payments_processed_at ON payments(processed_at);
+DROP TRIGGER IF EXISTS update_payments_updated_at ON payments;
+CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Optional table indexes
-CREATE INDEX IF NOT EXISTS idx_inventory_part_number ON inventory(part_number);
-CREATE INDEX IF NOT EXISTS idx_inventory_stock ON inventory(current_stock);
-CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory(category);
+DROP TRIGGER IF EXISTS update_booking_slots_updated_at ON booking_slots;
+CREATE TRIGGER update_booking_slots_updated_at BEFORE UPDATE ON booking_slots FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE INDEX IF NOT EXISTS idx_service_history_vehicle ON service_history(vehicle_id);
-CREATE INDEX IF NOT EXISTS idx_service_history_date ON service_history(service_date);
-CREATE INDEX IF NOT EXISTS idx_service_history_mechanic ON service_history(mechanic_id);
-
-CREATE INDEX IF NOT EXISTS idx_communications_user ON communications(user_id);
-CREATE INDEX IF NOT EXISTS idx_communications_type ON communications(type);
-CREATE INDEX IF NOT EXISTS idx_communications_status ON communications(status);
-CREATE INDEX IF NOT EXISTS idx_communications_sent_at ON communications(sent_at);
-
-CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
-CREATE INDEX IF NOT EXISTS idx_attachments_uploaded_by ON attachments(uploaded_by);
-
--- ============================================================================
--- FUNCTIONS AND TRIGGERS
--- ============================================================================
-
--- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Function to generate invoice numbers
-CREATE OR REPLACE FUNCTION generate_invoice_number()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.invoice_number IS NULL THEN
-        NEW.invoice_number := 'TIM-' || TO_CHAR(CURRENT_DATE, 'YYYYMM') || '-' ||
-                             LPAD((SELECT COUNT(*) + 1 FROM invoices WHERE
-                             invoice_number LIKE 'TIM-' || TO_CHAR(CURRENT_DATE, 'YYYYMM') || '-%')::text, 4, '0');
-    END IF;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Function to update booking slot availability
-CREATE OR REPLACE FUNCTION update_booking_slot_availability()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.is_available := (NEW.current_bookings < NEW.max_bookings);
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Function to validate service request status transitions
-CREATE OR REPLACE FUNCTION validate_status_transition()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Allow any status change for new records
-    IF OLD IS NULL THEN
-        RETURN NEW;
-    END IF;
-
-    -- Prevent changing status from COMPLETED back to earlier stages
-    IF OLD.status = 'COMPLETED' AND NEW.status NOT IN ('COMPLETED', 'CANCELLED') THEN
-        RAISE EXCEPTION 'Cannot change status from COMPLETED to %', NEW.status;
-    END IF;
-
-    -- Prevent changing status from CANCELLED
-    IF OLD.status = 'CANCELLED' AND NEW.status != 'CANCELLED' THEN
-        RAISE EXCEPTION 'Cannot change status from CANCELLED';
-    END IF;
-
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- ============================================================================
--- APPLY TRIGGERS
--- ============================================================================
-
--- Updated_at triggers for all relevant tables
-CREATE TRIGGER update_users_updated_at
-    BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_vehicles_updated_at
-    BEFORE UPDATE ON vehicles
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_service_catalog_updated_at
-    BEFORE UPDATE ON service_catalog
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_booking_slots_updated_at
-    BEFORE UPDATE ON booking_slots
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_service_requests_updated_at
-    BEFORE UPDATE ON service_requests
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_service_quotes_updated_at
-    BEFORE UPDATE ON service_quotes
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_invoices_updated_at
-    BEFORE UPDATE ON invoices
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_payments_updated_at
-    BEFORE UPDATE ON payments
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_inventory_updated_at
-    BEFORE UPDATE ON inventory
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_notifications_updated_at ON notifications;
+CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Business logic triggers
-CREATE TRIGGER generate_invoice_number_trigger
-    BEFORE INSERT ON invoices
-    FOR EACH ROW EXECUTE FUNCTION generate_invoice_number();
+DROP TRIGGER IF EXISTS generate_invoice_number_trigger ON invoices;
+CREATE TRIGGER generate_invoice_number_trigger BEFORE INSERT ON invoices FOR EACH ROW EXECUTE FUNCTION generate_invoice_number();
 
-CREATE TRIGGER update_booking_slot_availability_trigger
-    BEFORE INSERT OR UPDATE ON booking_slots
-    FOR EACH ROW EXECUTE FUNCTION update_booking_slot_availability();
+DROP TRIGGER IF EXISTS update_availability_trigger ON booking_slots;
+CREATE TRIGGER update_availability_trigger BEFORE INSERT OR UPDATE ON booking_slots FOR EACH ROW EXECUTE FUNCTION update_booking_slot_availability();
 
-CREATE TRIGGER validate_status_transition_trigger
-    BEFORE UPDATE ON service_requests
-    FOR EACH ROW EXECUTE FUNCTION validate_status_transition();
+DROP TRIGGER IF EXISTS validate_status_transition_trigger ON service_requests;
+CREATE TRIGGER validate_status_transition_trigger BEFORE UPDATE ON service_requests FOR EACH ROW EXECUTE FUNCTION validate_status_transition();
 
--- ============================================================================
--- VIEWS FOR COMMON QUERIES
--- ============================================================================
-
--- View for active service requests with client and vehicle details
-CREATE OR REPLACE VIEW active_service_requests AS
-SELECT
-    sr.id,
-    sr.status,
-    sr.preferred_date,
-    sr.preferred_time,
-    sr.notes,
-    sr.created_at,
-    c.name as client_name,
-    c.email as client_email,
-    c.phone as client_phone,
-    v.make || ' ' || v.model || ' (' || v.year || ')' as vehicle_info,
-    v.license_plate,
-    sc.name as service_name,
-    sc.base_price,
-    sc.estimated_duration_minutes,
-    m.name as mechanic_name
-FROM service_requests sr
-JOIN users c ON sr.client_id = c.id
-JOIN vehicles v ON sr.vehicle_id = v.id
-JOIN service_catalog sc ON sr.service_id = sc.id
-LEFT JOIN users m ON sr.assigned_mechanic_id = m.id
-WHERE sr.status NOT IN ('COMPLETED', 'CANCELLED');
-
--- View for financial summary
-CREATE OR REPLACE VIEW financial_summary AS
-SELECT
-    DATE_TRUNC('month', i.created_at) as month,
-    COUNT(i.id) as total_invoices,
-    SUM(i.total_amount) as total_invoiced,
-    SUM(CASE WHEN i.payment_status = 'PAID' THEN i.total_amount ELSE 0 END) as total_paid,
-    SUM(CASE WHEN i.payment_status IN ('UNPAID', 'OVERDUE') THEN i.total_amount ELSE 0 END) as total_outstanding
-FROM invoices i
-GROUP BY DATE_TRUNC('month', i.created_at)
-ORDER BY month DESC;
-
--- View for mechanic performance
-CREATE OR REPLACE VIEW mechanic_performance AS
-SELECT
-    m.id as mechanic_id,
-    m.name as mechanic_name,
-    COUNT(sr.id) as total_assigned,
-    COUNT(CASE WHEN sr.status = 'COMPLETED' THEN 1 END) as completed_jobs,
-    ROUND(
-        COUNT(CASE WHEN sr.status = 'COMPLETED' THEN 1 END) * 100.0 /
-        NULLIF(COUNT(sr.id), 0), 2
-    ) as completion_rate,
-    COUNT(sq.id) as quotes_created,
-    COUNT(CASE WHEN sq.approval_status = 'ACCEPTED' THEN 1 END) as quotes_accepted
-FROM users m
-LEFT JOIN service_requests sr ON m.id = sr.assigned_mechanic_id
-LEFT JOIN service_quotes sq ON m.id = sq.mechanic_id
-WHERE m.role = 'MECHANIC'
-GROUP BY m.id, m.name;
-
--- ============================================================================
--- SECURITY AND PERMISSIONS
--- ============================================================================
-
--- Row Level Security (RLS) policies can be added here for multi-tenant scenarios
--- Example for future implementation:
--- ALTER TABLE service_requests ENABLE ROW LEVEL SECURITY;
--- CREATE POLICY client_service_requests ON service_requests FOR ALL TO client_role USING (client_id = current_user_id());
-
--- ============================================================================
--- PERFORMANCE OPTIMIZATION
--- ============================================================================
-
--- Partial indexes for better performance on filtered queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_service_requests_active
-    ON service_requests(client_id, status, created_at)
-    WHERE status NOT IN ('COMPLETED', 'CANCELLED');
-
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_invoices_unpaid
-    ON invoices(due_date, total_amount)
-    WHERE payment_status IN ('UNPAID', 'OVERDUE');
-
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_payments_recent
-    ON payments(created_at, status, amount)
-    WHERE created_at > CURRENT_DATE - INTERVAL '90 days';
-
--- ============================================================================
--- SCHEMA COMMENTS FOR DOCUMENTATION
--- ============================================================================
-
-COMMENT ON TABLE users IS 'System users: clients, mechanics, and administrators';
-COMMENT ON TABLE vehicles IS 'Customer vehicles with registration and service history';
-COMMENT ON TABLE service_catalog IS 'Available services with pricing and duration';
-COMMENT ON TABLE booking_slots IS 'Available time slots for service appointments';
-COMMENT ON TABLE service_requests IS 'Customer service requests and their status';
-COMMENT ON TABLE service_quotes IS 'Mechanic quotes for service requests';
-COMMENT ON TABLE service_progress IS 'Real-time progress updates for active services';
-COMMENT ON TABLE invoices IS 'Generated invoices for completed services';
-COMMENT ON TABLE payments IS 'Payment records and transaction history';
-COMMENT ON TABLE inventory IS 'Parts and supplies inventory management';
-COMMENT ON TABLE service_history IS 'Complete service history for vehicles';
-COMMENT ON TABLE communications IS 'Communication logs (email, SMS, etc.)';
-COMMENT ON TABLE attachments IS 'File attachments for various entities';
-
--- ============================================================================
--- INITIALIZATION COMPLETE
--- ============================================================================
-
--- Log schema creation
-DO $$
-BEGIN
-    RAISE NOTICE 'Timatix Booking Services schema created successfully';
-    RAISE NOTICE 'Schema includes: % tables, % indexes, % triggers, % views',
-        (SELECT count(*) FROM information_schema.tables WHERE table_schema = current_schema()),
-        (SELECT count(*) FROM pg_indexes WHERE schemaname = current_schema()),
-        (SELECT count(*) FROM information_schema.triggers WHERE trigger_schema = current_schema()),
-        (SELECT count(*) FROM information_schema.views WHERE table_schema = current_schema());
-END $$;
+-- 6. Insert default service types
+INSERT INTO service_types (name, description, estimated_duration_minutes, base_price) VALUES
+('Basic Service', 'Oil change, filter replacement, basic inspection', 60, 150.00),
+('Full Service', 'Comprehensive vehicle inspection and maintenance', 120, 300.00),
+('Brake Service', 'Brake pad replacement and brake system inspection', 90, 250.00),
+('Tire Service', 'Tire rotation, balancing, and pressure check', 45, 100.00),
+('Engine Diagnostic', 'Computer diagnostic and engine performance check', 30, 120.00)
+ON CONFLICT DO NOTHING;
