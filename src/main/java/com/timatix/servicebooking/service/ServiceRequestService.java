@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -178,5 +179,33 @@ public class ServiceRequestService {
         if (!request.getVehicle().getOwner().getId().equals(request.getClient().getId())) {
             throw new IllegalArgumentException("Vehicle does not belong to the specified client");
         }
+    }
+
+    /**
+     * Returns the user ID of the authenticated principal.
+     * Useful for client endpoints like /my-requests.
+     */
+    public Long getUserIdFromPrincipal(Object principal) {
+        if (principal instanceof UserDetails userDetails) {
+            return userRepository.findByEmail(userDetails.getUsername())
+                    .map(User::getId)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + userDetails.getUsername()));
+        } else if (principal instanceof User user) {
+            return user.getId();
+        } else {
+            throw new RuntimeException("Unable to extract user ID from principal");
+        }
+    }
+
+    /**
+     * Checks if the currently authenticated user is the owner of a service request.
+     * Used in @PreAuthorize expressions.
+     */
+    public boolean isRequestOwner(Long requestId, String username) {
+        Optional<ServiceRequest> requestOpt = serviceRequestRepository.findById(requestId);
+        if (requestOpt.isEmpty()) return false;
+
+        ServiceRequest request = requestOpt.get();
+        return request.getClient().getEmail().equals(username);
     }
 }

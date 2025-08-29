@@ -1,4 +1,3 @@
-// Enhanced Service Request Controller with Notifications
 package com.timatix.servicebooking.controller;
 
 import com.timatix.servicebooking.model.ServiceRequest;
@@ -6,11 +5,14 @@ import com.timatix.servicebooking.service.ServiceRequestService;
 import com.timatix.servicebooking.service.NotificationService;
 import com.timatix.servicebooking.service.AuditService;
 import com.timatix.servicebooking.dto.ServiceRequestDto;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -30,6 +32,7 @@ public class ServiceRequestController {
     private final NotificationService notificationService;
     private final AuditService auditService;
 
+    // Admin & Mechanic can see all requests
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('MECHANIC')")
     public ResponseEntity<List<ServiceRequest>> getAllServiceRequests() {
@@ -37,16 +40,27 @@ public class ServiceRequestController {
         return ResponseEntity.ok(requests);
     }
 
+    // Admin & Mechanic can get by ID; Client can get only their own request
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MECHANIC') or @serviceRequestService.isRequestOwner(#id, authentication.principal.username)")
-    public ResponseEntity<ServiceRequest> getServiceRequestById(@PathVariable Long id) {
-        Optional<ServiceRequest> request = serviceRequestService.getServiceRequestById(id);
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MECHANIC') or @serviceRequestService.isRequestOwner(#requestId, authentication.principal.username)")
+    public ResponseEntity<ServiceRequest> getServiceRequestById(@PathVariable("id") Long requestId) {
+        Optional<ServiceRequest> request = serviceRequestService.getServiceRequestById(requestId);
         return request.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // CLIENT gets their own requests without passing their ID explicitly
+    @GetMapping("/my-requests")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<List<ServiceRequest>> getMyServiceRequests(Authentication authentication) {
+        Long userId = serviceRequestService.getUserIdFromPrincipal(authentication.getPrincipal());
+        List<ServiceRequest> requests = serviceRequestService.getServiceRequestsByClient(userId);
+        return ResponseEntity.ok(requests);
+    }
+
+    // Admin can fetch any client requests
     @GetMapping("/client/{clientId}")
-    @PreAuthorize("hasRole('ADMIN') or #clientId == authentication.principal.id")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ServiceRequest>> getServiceRequestsByClient(@PathVariable Long clientId) {
         List<ServiceRequest> requests = serviceRequestService.getServiceRequestsByClient(clientId);
         return ResponseEntity.ok(requests);
@@ -63,7 +77,7 @@ public class ServiceRequestController {
                     convertDtoToEntity(requestDto)
             );
 
-            // Send notification and log audit
+            // Notifications & audit
             notificationService.notifyServiceRequestCreated(request);
             auditService.logServiceRequestAction(request.getId(), "CREATED",
                     "Service request created for " + request.getService().getName());
@@ -87,7 +101,6 @@ public class ServiceRequestController {
         try {
             ServiceRequest updatedRequest = serviceRequestService.assignMechanic(id, mechanicId);
 
-            // Send notification and log audit
             notificationService.notifyMechanicAssigned(updatedRequest);
             auditService.logServiceRequestAction(id, "MECHANIC_ASSIGNED",
                     "Mechanic " + mechanicId + " assigned to request");
@@ -108,7 +121,6 @@ public class ServiceRequestController {
             ServiceRequest.RequestStatus status = ServiceRequest.RequestStatus.valueOf(statusUpdate.get("status"));
             ServiceRequest updatedRequest = serviceRequestService.updateStatus(id, status);
 
-            // Send notification and log audit
             notificationService.notifyServiceStatusUpdate(updatedRequest, status);
             auditService.logServiceRequestAction(id, "STATUS_UPDATED", "Status changed to " + status);
 

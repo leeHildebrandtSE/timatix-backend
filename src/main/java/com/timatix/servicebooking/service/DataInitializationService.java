@@ -51,7 +51,8 @@ public class DataInitializationService implements CommandLineRunner {
         // Check if admin user already exists
         if (userRepository.findByEmail("admin@timatix.com").isEmpty()) {
             User admin = new User();
-            admin.setFirstName("System Administrator");
+            admin.setFirstName("System");
+            admin.setLastName("Administrator");
             admin.setEmail("admin@timatix.com");
             admin.setPassword(passwordEncoder.encode("admin123"));
             admin.setPhoneNumber("+27123456789");
@@ -63,20 +64,21 @@ public class DataInitializationService implements CommandLineRunner {
         }
 
         // Create multiple mechanics
-        createMechanicIfNotExists("Mike Smith", "mike@timatix.com", "+27123456790");
-        createMechanicIfNotExists("Sarah Johnson", "sarah@timatix.com", "+27123456791");
-        createMechanicIfNotExists("David Wilson", "david.mechanic@timatix.com", "+27123456792");
+        createMechanicIfNotExists("Mike", "Smith", "mike@timatix.com", "+27123456790");
+        createMechanicIfNotExists("Sarah", "Johnson", "sarah@timatix.com", "+27123456791");
+        createMechanicIfNotExists("David", "Wilson", "david.mechanic@timatix.com", "+27123456792");
 
         // Create sample clients
-        createClientIfNotExists("John Doe", "john.doe@email.com", "+27123456793");
-        createClientIfNotExists("Emma Brown", "emma.brown@email.com", "+27123456794");
-        createClientIfNotExists("Alex Taylor", "alex.taylor@email.com", "+27123456795");
+        createClientIfNotExists("John", "Doe", "john.doe@email.com", "+27123456793");
+        createClientIfNotExists("Emma", "Brown", "emma.brown@email.com", "+27123456794");
+        createClientIfNotExists("Alex", "Taylor", "alex.taylor@email.com", "+27123456795");
     }
 
-    private void createMechanicIfNotExists(String name, String email, String phone) {
+    private void createMechanicIfNotExists(String firstName, String lastName, String email, String phone) {
         if (userRepository.findByEmail(email).isEmpty()) {
             User mechanic = new User();
-            mechanic.setFirstName(name);
+            mechanic.setFirstName(firstName);
+            mechanic.setLastName(lastName);
             mechanic.setEmail(email);
             mechanic.setPassword(passwordEncoder.encode("mechanic123"));
             mechanic.setPhoneNumber(phone);
@@ -88,10 +90,11 @@ public class DataInitializationService implements CommandLineRunner {
         }
     }
 
-    private void createClientIfNotExists(String name, String email, String phone) {
+    private void createClientIfNotExists(String firstname, String lastName, String email, String phone) {
         if (userRepository.findByEmail(email).isEmpty()) {
             User client = new User();
-            client.setFirstName(name);
+            client.setFirstName(firstname);
+            client.setLastName(lastName);
             client.setEmail(email);
             client.setPassword(passwordEncoder.encode("client123"));
             client.setPhoneNumber(phone);

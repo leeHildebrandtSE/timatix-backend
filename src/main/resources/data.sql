@@ -5,24 +5,24 @@
 -- USERS (Clients, Mechanics, and Admins)
 -- ============================================================================
 
-INSERT INTO users (name, email, password, phone, address, role, created_at, updated_at) VALUES
+INSERT INTO users (first_name, last_name, email, password, phone_number, address, role, created_at, updated_at) VALUES
 -- Admin users
-('John Admin', 'admin@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456789', '123 Main St, Cape Town', 'ADMIN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Sarah Manager', 'manager@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456788', '456 Admin Ave, Cape Town', 'ADMIN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('John', 'Admin', 'admin@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456789', '123 Main St, Cape Town', 'ADMIN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Sarah', 'Manager', 'manager@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456788', '456 Admin Ave, Cape Town', 'ADMIN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
 -- Mechanic users
-('Mike Mechanic', 'mike@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456790', '456 Workshop Ave, Cape Town', 'MECHANIC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Sarah Johnson', 'sarah@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456791', '789 Repair Rd, Cape Town', 'MECHANIC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('David Wilson', 'david.mechanic@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456792', '321 Service St, Cape Town', 'MECHANIC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Lisa Thompson', 'lisa@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456793', '654 Auto Ln, Cape Town', 'MECHANIC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Mike', 'Mechanic', 'mike@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456790', '456 Workshop Ave, Cape Town', 'MECHANIC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Sarah', 'Johnson', 'sarah@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456791', '789 Repair Rd, Cape Town', 'MECHANIC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('David', 'Wilson', 'david.mechanic@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456792', '321 Service St, Cape Town', 'MECHANIC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Lisa', 'Thompson', 'lisa@timatix.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456793', '654 Auto Ln, Cape Town', 'MECHANIC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
 -- Client users
-('John Doe', 'john.doe@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456794', '321 Client St, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Emma Brown', 'emma.brown@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456795', '654 Customer Ave, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Alex Taylor', 'alex.taylor@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456796', '987 User Blvd, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Michael Smith', 'michael.smith@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456797', '147 Patron Pl, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Jessica Wilson', 'jessica.wilson@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456798', '258 Buyer Blvd, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Robert Davis', 'robert.davis@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456799', '369 Client Circle, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+('John', 'Doe', 'john.doe@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456794', '321 Client St, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Emma', 'Brown', 'emma.brown@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456795', '654 Customer Ave, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Alex', 'Taylor', 'alex.taylor@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456796', '987 User Blvd, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Michael', 'Smith', 'michael.smith@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456797', '147 Patron Pl, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Jessica', 'Wilson', 'jessica.wilson@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456798', '258 Buyer Blvd, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Robert', 'Davis', 'robert.davis@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+27123456799', '369 Client Circle, Cape Town', 'CLIENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (email) DO NOTHING;
 
 -- ============================================================================
