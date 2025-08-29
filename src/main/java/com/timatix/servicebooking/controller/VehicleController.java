@@ -2,7 +2,9 @@ package com.timatix.servicebooking.controller;
 
 import com.timatix.servicebooking.model.User;
 import com.timatix.servicebooking.model.Vehicle;
+import com.timatix.servicebooking.model.VehicleMakeEnum;
 import com.timatix.servicebooking.service.UserService;
+import com.timatix.servicebooking.service.VehicleMakeService;
 import com.timatix.servicebooking.service.VehicleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,10 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 
 @Slf4j
 @RestController
@@ -25,6 +24,7 @@ public class VehicleController {
 
     private final VehicleService vehicleService;
     private final UserService userService;
+    private final VehicleMakeService vehicleMakeService;
 
     @GetMapping
     public ResponseEntity<List<Vehicle>> getAllVehicles() {
@@ -169,5 +169,13 @@ public class VehicleController {
             error.put("error", "Internal server error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
+    }
+
+    @GetMapping("/vehicle-makes")
+    public ResponseEntity<List<String>> getAllVehicleMakes() {
+        List<String> makes = Arrays.stream(VehicleMakeEnum.values())
+                .map(Enum::name)
+                .toList();
+        return ResponseEntity.ok(makes);
     }
 }
