@@ -12,7 +12,7 @@ public class AuditService {
 
     public void logUserAction(User user, String action, String details) {
         log.info("AUDIT - User: {} ({}), Action: {}, Details: {}, Timestamp: {}",
-                user.getName(), user.getEmail(), action, details, LocalDateTime.now());
+                user.getFirstName(), user.getEmail(), action, details, LocalDateTime.now());
     }
 
     public void logServiceRequestAction(Long requestId, String action, String details) {
