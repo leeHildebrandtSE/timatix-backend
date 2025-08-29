@@ -178,7 +178,7 @@ public class ScheduledTasksService {
                         "This is a reminder that invoice %s for R%.2f is now overdue.\n" +
                         "Please make payment as soon as possible to avoid any service interruptions.\n\n" +
                         "Thank you,\nTimatix Auto Works",
-                invoice.getServiceRequest().getClient().getName(),
+                invoice.getServiceRequest().getClient().getFirstName(),
                 invoice.getInvoiceNumber(),
                 invoice.getTotalAmount()
         );
@@ -194,7 +194,7 @@ public class ScheduledTasksService {
                         "This is a reminder that your %s service for %s %s is scheduled for tomorrow at %s.\n\n" +
                         "Please ensure your vehicle is ready for service.\n\n" +
                         "Thank you,\nTimatix Auto Works",
-                request.getClient().getName(),
+                request.getClient().getFirstName(),
                 request.getService().getName(),
                 request.getVehicle().getMake(),
                 request.getVehicle().getModel(),

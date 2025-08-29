@@ -51,10 +51,10 @@ public class DataInitializationService implements CommandLineRunner {
         // Check if admin user already exists
         if (userRepository.findByEmail("admin@timatix.com").isEmpty()) {
             User admin = new User();
-            admin.setName("System Administrator");
+            admin.setFirstName("System Administrator");
             admin.setEmail("admin@timatix.com");
             admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setPhone("+27123456789");
+            admin.setPhoneNumber("+27123456789");
             admin.setAddress("Timatix Headquarters, Cape Town");
             admin.setRole(User.Role.ADMIN);
 
@@ -76,10 +76,10 @@ public class DataInitializationService implements CommandLineRunner {
     private void createMechanicIfNotExists(String name, String email, String phone) {
         if (userRepository.findByEmail(email).isEmpty()) {
             User mechanic = new User();
-            mechanic.setName(name);
+            mechanic.setFirstName(name);
             mechanic.setEmail(email);
             mechanic.setPassword(passwordEncoder.encode("mechanic123"));
-            mechanic.setPhone(phone);
+            mechanic.setPhoneNumber(phone);
             mechanic.setAddress("Workshop Bay, Cape Town");
             mechanic.setRole(User.Role.MECHANIC);
 
@@ -91,10 +91,10 @@ public class DataInitializationService implements CommandLineRunner {
     private void createClientIfNotExists(String name, String email, String phone) {
         if (userRepository.findByEmail(email).isEmpty()) {
             User client = new User();
-            client.setName(name);
+            client.setFirstName(name);
             client.setEmail(email);
             client.setPassword(passwordEncoder.encode("client123"));
-            client.setPhone(phone);
+            client.setPhoneNumber(phone);
             client.setAddress("Client Address, Cape Town");
             client.setRole(User.Role.CLIENT);
 
