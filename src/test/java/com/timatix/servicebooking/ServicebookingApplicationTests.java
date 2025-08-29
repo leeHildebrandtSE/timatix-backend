@@ -54,7 +54,7 @@ class ServicebookingApplicationTests {
     @Transactional
     void shouldCreateUser() {
         User user = new User();
-        user.setName("Test User");
+        user.setFirstName("Test User");
         user.setEmail("test@example.com");
         user.setPassword("password123");
         user.setRole(User.Role.CLIENT);
@@ -62,7 +62,7 @@ class ServicebookingApplicationTests {
         User savedUser = userService.createUser(user);
 
         assertThat(savedUser.getId()).isNotNull();
-        assertThat(savedUser.getName()).isEqualTo("Test User");
+        assertThat(savedUser.getFirstName()).isEqualTo("Test User");
         assertThat(savedUser.getEmail()).isEqualTo("test@example.com");
         assertThat(savedUser.getRole()).isEqualTo(User.Role.CLIENT);
     }

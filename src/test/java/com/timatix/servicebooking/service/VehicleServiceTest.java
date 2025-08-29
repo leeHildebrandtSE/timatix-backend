@@ -38,7 +38,7 @@ class VehicleServiceTest {
     void setUp() {
         // Create a test user
         testUser = new User();
-        testUser.setName("Test Owner");
+        testUser.setFirstName("Test Owner");
         testUser.setEmail("owner@test.com");
         testUser.setPassword("password123");
         testUser.setRole(User.Role.CLIENT);

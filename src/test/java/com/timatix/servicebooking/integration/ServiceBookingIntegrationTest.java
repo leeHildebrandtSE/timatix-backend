@@ -64,7 +64,7 @@ class ServiceBookingIntegrationTest {
 
         // Create test client
         testClient = new User();
-        testClient.setName("Test Client");
+        testClient.setFirstName("Test Client");
         testClient.setEmail("testclient@email.com");
         testClient.setPassword(passwordEncoder.encode("password123"));
         testClient.setRole(User.Role.CLIENT);
