@@ -1,4 +1,3 @@
-// JWT Security Configuration
 package com.timatix.servicebooking.config;
 
 import com.timatix.servicebooking.security.JwtAuthenticationEntryPoint;
@@ -7,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -38,20 +38,33 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.cors().and().csrf().disable()
+        return http
+                .cors(Customizer.withDefaults()) // Use existing CORS configuration
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
+                        // Auth endpoints - support both patterns
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/users/register", "/users/login").permitAll()
+
+                        // Health endpoints - support multiple patterns
                         .requestMatchers("/health/**").permitAll()
-                        .requestMatchers("/services/**").permitAll() // Allow public access to services
+                        .requestMatchers("/api/health/**").permitAll()
+                        .requestMatchers("/api/actuator/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
+
+                        // Public endpoints
+                        .requestMatchers("/services/**").permitAll()
+                        .requestMatchers("/api/services/**").permitAll()
                         .requestMatchers("/booking-slots/available/**").permitAll()
+                        .requestMatchers("/api/booking-slots/available/**").permitAll()
+
                         .anyRequest().authenticated()
                 )
-                .exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                .and()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-
-        http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
+
+    // CORS configuration is handled by existing CorsConfig class
 }

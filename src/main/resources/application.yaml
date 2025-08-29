@@ -78,7 +78,7 @@ spring:
 
 # Server Configuration - UPDATED FOR EXTERNAL ACCESS
 server:
-  port: 8081
+  port: 8083
   address: 0.0.0.0  # CRITICAL: This allows external connections
   servlet:
     context-path: /api

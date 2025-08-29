@@ -18,14 +18,14 @@ public class ServiceBookingApplication {
 
         // Ensure server binds to all interfaces
         System.setProperty("server.address", "0.0.0.0");
-        System.setProperty("server.port", "8081");
+        System.setProperty("server.port", "8083");
 
         app.run(args);
 
-        System.out.println("🚀 Spring Boot server running on http://0.0.0.0:8081");
-        System.out.println("📱 Mobile devices can access: http://192.168.18.7:8081");
-        System.out.println("💻 Local access: http://localhost:8081");
-        System.out.println("🔍 Health check: http://localhost:8081/api/health");
+        System.out.println("🚀 Spring Boot server running on http://0.0.0.0:8083");
+        System.out.println("📱 Mobile devices can access: http://192.168.18.7:8083");
+        System.out.println("💻 Local access: http://localhost:8083");
+        System.out.println("🔍 Health check: http://localhost:8083/api/health");
     }
 
     // Health check endpoint for testing connectivity

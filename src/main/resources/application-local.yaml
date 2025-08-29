@@ -48,7 +48,10 @@ logging:
 
 # Local Server Configuration
 server:
-  port: 8081  # Different port for local development
+  port: 8083
+  address: 0.0.0.0  # Allow external connections from mobile devices
+  servlet:
+    context-path: /api  # Keep consistent with main config
   error:
     include-stacktrace: always
 

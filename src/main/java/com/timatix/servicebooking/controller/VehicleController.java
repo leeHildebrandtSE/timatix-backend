@@ -1,11 +1,14 @@
 package com.timatix.servicebooking.controller;
 
+import com.timatix.servicebooking.model.User;
 import com.timatix.servicebooking.model.Vehicle;
+import com.timatix.servicebooking.service.UserService;
 import com.timatix.servicebooking.service.VehicleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +24,7 @@ import java.util.HashMap;
 public class VehicleController {
 
     private final VehicleService vehicleService;
+    private final UserService userService;
 
     @GetMapping
     public ResponseEntity<List<Vehicle>> getAllVehicles() {
@@ -144,5 +148,26 @@ public class VehicleController {
         Map<String, Boolean> response = new HashMap<>();
         response.put("exists", exists);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/user")
+    public ResponseEntity<?> getCurrentUserVehicles(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Optional<User> userOpt = userService.getUserByEmail(email);
+
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                List<Vehicle> vehicles = vehicleService.getVehiclesByOwner(user.getId());
+                return ResponseEntity.ok(vehicles);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            log.error("Error fetching current user vehicles", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
     }
 }
