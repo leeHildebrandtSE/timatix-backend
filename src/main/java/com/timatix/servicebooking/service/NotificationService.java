@@ -23,7 +23,7 @@ public class NotificationService {
         String message = String.format(
                 "Hello %s, you have received a quote for your %s %s service request. " +
                         "Quote amount: R%.2f. Please review and approve in the app.",
-                client.getName(),
+                client.getFirstName(),
                 quote.getRequest().getVehicle().getMake(),
                 quote.getRequest().getVehicle().getModel(),
                 quote.getTotalAmount()
@@ -41,7 +41,7 @@ public class NotificationService {
         String message = String.format(
                 "Hello %s, your quote for %s %s has been approved by the client. " +
                         "Please prepare for the service on %s.",
-                mechanic.getName(),
+                mechanic.getFirstName(),
                 quote.getRequest().getVehicle().getMake(),
                 quote.getRequest().getVehicle().getModel(),
                 quote.getRequest().getPreferredDate()
@@ -69,11 +69,11 @@ public class NotificationService {
             String message = String.format(
                     "Hello %s, you have been assigned to a new service request for %s %s. " +
                             "Service: %s. Client: %s",
-                    mechanic.getName(),
+                    mechanic.getFirstName(),
                     request.getVehicle().getMake(),
                     request.getVehicle().getModel(),
                     request.getService().getName(),
-                    request.getClient().getName()
+                    request.getClient().getFirstName()
             );
 
             log.info("NOTIFICATION - Mechanic Assigned: {}", message);
@@ -99,7 +99,7 @@ public class NotificationService {
 
         String message = String.format(
                 "Hello %s, your service request for %s %s has been updated. Status: %s",
-                client.getName(),
+                client.getFirstName(),
                 request.getVehicle().getMake(),
                 request.getVehicle().getModel(),
                 statusMessage
@@ -112,7 +112,7 @@ public class NotificationService {
         User client = invoice.getServiceRequest().getClient();
         String message = String.format(
                 "Hello %s, we have received your payment of R%.2f for invoice %s. Thank you!",
-                client.getName(),
+                client.getFirstName(),
                 payment.getAmount(),
                 invoice.getInvoiceNumber()
         );
@@ -124,7 +124,7 @@ public class NotificationService {
         User client = invoice.getServiceRequest().getClient();
         String message = String.format(
                 "Hello %s, your invoice %s for R%.2f is ready. Please review and make payment.",
-                client.getName(),
+                client.getFirstName(),
                 invoice.getInvoiceNumber(),
                 invoice.getTotalAmount()
         );
@@ -136,7 +136,7 @@ public class NotificationService {
         User client = request.getClient();
         String message = String.format(
                 "Hello %s, your %s %s service has been completed and is ready for collection!",
-                client.getName(),
+                client.getFirstName(),
                 request.getVehicle().getMake(),
                 request.getVehicle().getModel()
         );
@@ -148,7 +148,7 @@ public class NotificationService {
         User client = request.getClient();
         String message = String.format(
                 "Hello %s, this is a reminder that your %s service for %s %s is scheduled for tomorrow at %s.",
-                client.getName(),
+                client.getFirstName(),
                 request.getService().getName(),
                 request.getVehicle().getMake(),
                 request.getVehicle().getModel(),

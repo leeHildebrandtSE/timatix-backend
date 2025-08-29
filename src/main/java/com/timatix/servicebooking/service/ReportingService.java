@@ -232,7 +232,7 @@ public class ReportingService {
         List<Map<String, Object>> performance = new ArrayList<>();
 
         List<Object[]> mechanics = userRepository.findAllMechanics().stream()
-                .map(user -> new Object[]{user.getId(), user.getName()})
+                .map(user -> new Object[]{user.getId(), user.getFirstName()})
                 .collect(Collectors.toList());
 
         for (Object[] mechanic : mechanics) {

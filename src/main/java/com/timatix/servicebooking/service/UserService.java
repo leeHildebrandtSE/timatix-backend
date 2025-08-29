@@ -52,8 +52,8 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 
-        user.setName(userDetails.getName());
-        user.setPhone(userDetails.getPhone());
+        user.setFirstName(userDetails.getFirstName());
+        user.setPhoneNumber(userDetails.getPhoneNumber());
         user.setAddress(userDetails.getAddress());
 
         // Don't allow email or role changes in update
@@ -83,7 +83,7 @@ public class UserService {
             throw new IllegalArgumentException("Email is required");
         }
 
-        if (user.getName() == null || user.getName().trim().isEmpty()) {
+        if (user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
             throw new IllegalArgumentException("Name is required");
         }
 
