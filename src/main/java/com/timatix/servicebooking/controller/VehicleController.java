@@ -32,7 +32,15 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/vehicle-makes")
+    public ResponseEntity<List<String>> getAllVehicleMakes() {
+        List<String> makes = Arrays.stream(VehicleMakeEnum.values())
+                .map(Enum::name)
+                .toList();
+        return ResponseEntity.ok(makes);
+    }
+
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<Vehicle> getVehicleById(@PathVariable Long id) {
         Optional<Vehicle> vehicle = vehicleService.getVehicleById(id);
         return vehicle.map(ResponseEntity::ok)
@@ -169,13 +177,5 @@ public class VehicleController {
             error.put("error", "Internal server error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
-    }
-
-    @GetMapping("/vehicle-makes")
-    public ResponseEntity<List<String>> getAllVehicleMakes() {
-        List<String> makes = Arrays.stream(VehicleMakeEnum.values())
-                .map(Enum::name)
-                .toList();
-        return ResponseEntity.ok(makes);
     }
 }
