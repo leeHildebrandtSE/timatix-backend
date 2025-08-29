@@ -22,7 +22,10 @@ public class User {
     private Long id;
 
     @Column(nullable = false)
-    private String name;
+    private String firstName;
+
+    @Column(nullable = false)
+    private String lastName;
 
     @Column(unique = true, nullable = false)
     private String email;
@@ -31,7 +34,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    private String phone;
+    private String phoneNumber;
     private String address;
 
     @Enumerated(EnumType.STRING)

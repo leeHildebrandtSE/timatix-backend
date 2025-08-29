@@ -15,7 +15,10 @@ import jakarta.validation.constraints.NotNull;
 public class UserRegistrationDto {
 
     @NotBlank(message = "Name is required")
-    private String name;
+    private String firstName;
+
+    @NotBlank(message = "Last name is required")
+    private String lastName;
 
     @Email(message = "Please provide a valid email")
     @NotBlank(message = "Email is required")
@@ -24,7 +27,7 @@ public class UserRegistrationDto {
     @NotBlank(message = "Password is required")
     private String password;
 
-    private String phone;
+    private String phoneNumber;
     private String address;
 
     @NotNull(message = "Role is required")

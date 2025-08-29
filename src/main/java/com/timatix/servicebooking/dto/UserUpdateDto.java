@@ -12,9 +12,9 @@ import jakarta.validation.constraints.NotBlank;
 public class UserUpdateDto {
 
     @NotBlank(message = "Name is required")
-    private String name;
-
-    private String phone;
+    private String firstName;
+    private String lastName;
+    private String phoneNumber;
     private String address;
     private String password; // Optional for updates
 }

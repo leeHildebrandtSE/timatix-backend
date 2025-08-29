@@ -75,10 +75,11 @@ public class UserController {
     public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegistrationDto registrationDto) {
         try {
             User user = new User();
-            user.setName(registrationDto.getName());
+            user.setFirstName(registrationDto.getFirstName());
+            user.setLastName(registrationDto.getLastName());
             user.setEmail(registrationDto.getEmail());
             user.setPassword(passwordEncoder.encode(registrationDto.getPassword()));
-            user.setPhone(registrationDto.getPhone());
+            user.setPhoneNumber(registrationDto.getPhoneNumber());
             user.setAddress(registrationDto.getAddress());
             user.setRole(registrationDto.getRole());
 
